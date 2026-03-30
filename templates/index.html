@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Dash</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.1); }
+        #progress-bar { width: 0%; transition: width 0.4s ease; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-black tracking-tight text-indigo-400">QUEST_OS</h1>
+            <div class="text-xs font-mono text-slate-500 bg-slate-800 px-3 py-1 rounded">127.0.0.1:1234</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-center">
+            <div class="glass p-6 rounded-2xl">
+                <div class="text-slate-500 text-[10px] uppercase font-bold">Quests</div>
+                <div class="text-4xl font-bold">{{ data.quests_completed }}</div>
+            </div>
+            <div class="glass p-6 rounded-2xl border-orange-500/30">
+                <div class="text-orange-500 text-[10px] uppercase font-bold">Streak</div>
+                <div class="text-4xl font-bold">{{ data.current_streak }} 🔥</div>
+            </div>
+            <div class="glass p-6 rounded-2xl border-cyan-500/30">
+                <div class="text-cyan-400 text-[10px] uppercase font-bold">Shields</div>
+                <div class="text-4xl font-bold">{{ data.protection_left }} 🛡️</div>
+            </div>
+        </div>
+
+        <div class="glass rounded-3xl p-8 max-w-xl mx-auto">
+            <h2 class="text-xl font-bold mb-2">Daily Goal</h2>
+            <p class="text-slate-400 text-sm mb-6 italic">"{{ data.current_goal }}"</p>
+            <form id="uploadForm" class="space-y-4">
+                <div class="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center hover:border-indigo-500 transition cursor-pointer relative">
+                    <input type="file" id="imageInput" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
+                    <div id="previewContainer" class="hidden"><img id="imgPreview" class="mx-auto max-h-40 rounded-lg mb-2"></div>
+                    <div id="uploadPrompt" class="text-slate-500 text-sm">Click or drag image here</div>
+                </div>
+                
+                <div id="progressContainer" class="hidden w-full bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="bg-indigo-500 h-full"></div>
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 py-4 rounded-xl font-bold shadow-lg transition disabled:opacity-50">
+                    VALIDATE PROOF
+                </button>
+            </form>
+            <div id="status" class="mt-4 text-center font-mono text-xs hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('imageInput');
+        const preview = document.getElementById('imgPreview');
+        const prompt = document.getElementById('uploadPrompt');
+        const container = document.getElementById('previewContainer');
+
+        input.onchange = () => {
+            const [file] = input.files;
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+                container.classList.remove('hidden');
+                prompt.classList.add('hidden');
+            }
+        };
+
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('status');
+            const prog = document.getElementById('progressContainer');
+            const bar = document.getElementById('progress-bar');
+            
+            if(!input.files[0]) return;
+
+            status.classList.remove('hidden');
+            prog.classList.remove('hidden');
+            status.innerText = "UPLOADING...";
+            bar.style.width = "40%";
+
+            const formData = new FormData();
+            formData.append('image', input.files[0]);
+
+            try {
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                bar.style.width = "100%";
+                const data = await res.json();
+                status.innerText = data.message;
+                if(data.status === 'success') setTimeout(() => location.reload(), 1500);
+            } catch (err) {
+                status.innerText = "CONNECTION FAILED";
+            }
+        };
+    </script>
+</body>
+<html>
